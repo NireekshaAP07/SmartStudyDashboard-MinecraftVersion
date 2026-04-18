@@ -1,0 +1,1315 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Study Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=VT323&amp;display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #2d2d2d;
+      --surface: #3a3a3a;
+      --text: #e0e0e0;
+      --primary: #4caf50;
+      --secondary: #6d6d6d;
+      --border: #1a1a1a;
+      --border-light: #555;
+      --danger: #c0392b;
+    }
+
+    html, body { height: 100%; font-family: 'VT323', monospace; background: var(--bg); color: var(--text); }
+
+    .app-wrapper {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: var(--bg);
+    }
+
+    /* Pixel border utility */
+    .mc-box {
+      border: 4px solid var(--border);
+      outline: 2px solid var(--border-light);
+      outline-offset: -6px;
+      background: var(--surface);
+    }
+
+    .mc-btn {
+      font-family: 'Silkscreen', cursive;
+      font-size: 14px;
+      border: 3px solid var(--border);
+      outline: 2px solid var(--border-light);
+      outline-offset: -5px;
+      cursor: pointer;
+      padding: 8px 16px;
+      color: var(--text);
+      transition: filter 0.1s, transform 0.1s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .mc-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+    .mc-btn:active { transform: translateY(1px); filter: brightness(0.9); }
+    .mc-btn-primary { background: var(--primary); }
+    .mc-btn-secondary { background: var(--secondary); }
+    .mc-btn-danger { background: var(--danger); }
+
+    .mc-input {
+      font-family: 'VT323', monospace;
+      font-size: 20px;
+      background: #222;
+      color: var(--text);
+      border: 3px solid var(--border);
+      outline: 2px solid var(--border-light);
+      outline-offset: -5px;
+      padding: 8px 12px;
+      width: 100%;
+    }
+    .mc-input::placeholder { color: #777; }
+    .mc-input:focus { outline-color: var(--primary); }
+
+    /* Header */
+    .header {
+      background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+      border-bottom: 4px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-title {
+      font-family: 'Silkscreen', cursive;
+      font-size: 22px;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-title .pickaxe {
+      font-size: 28px;
+    }
+
+    /* XP Bar */
+    .xp-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .level-badge {
+      font-family: 'Silkscreen', cursive;
+      font-size: 16px;
+      background: var(--primary);
+      color: #111;
+      padding: 4px 12px;
+      border: 3px solid var(--border);
+      min-width: 80px;
+      text-align: center;
+    }
+    .xp-bar-outer {
+      width: 200px;
+      height: 24px;
+      background: #222;
+      border: 3px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .xp-bar-inner {
+      height: 100%;
+      background: var(--primary);
+      transition: width 0.4s ease;
+      position: relative;
+    }
+    .xp-bar-inner::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 40%;
+      background: rgba(255,255,255,0.15);
+    }
+    .xp-text {
+      font-family: 'Silkscreen', cursive;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    /* Main layout */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+      padding: 16px;
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    @media (max-width: 768px) {
+      .main-content { grid-template-columns: 1fr; }
+    }
+
+    /* Panels */
+    .panel { padding: 16px; }
+    .panel-title {
+      font-family: 'Silkscreen', cursive;
+      font-size: 18px;
+      color: var(--primary);
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-title i { width: 20px; height: 20px; color: var(--primary); }
+
+    /* Task form */
+    .task-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .task-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .task-field-main {
+      flex: 1;
+      min-width: 220px;
+    }
+    .task-field-small {
+      width: 120px;
+    }
+    .task-field-label {
+      font-family: 'Silkscreen', cursive;
+      font-size: 11px;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .task-form .mc-input { flex: 1; }
+    .task-form select { padding: 8px 12px; }
+
+    /* Day completion section */
+    .day-completion {
+      padding: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: space-between;
+    }
+    .day-completion-label {
+      font-family: 'Silkscreen', cursive;
+      font-size: 16px;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .day-toggle-btn {
+      font-family: 'Silkscreen', cursive;
+      font-size: 13px;
+      border: 3px solid var(--border);
+      outline: 2px solid var(--border-light);
+      outline-offset: -5px;
+      cursor: pointer;
+      padding: 6px 14px;
+      color: var(--text);
+      transition: filter 0.1s, transform 0.1s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: var(--secondary);
+    }
+    .day-toggle-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+    .day-toggle-btn:active { transform: translateY(1px); filter: brightness(0.9); }
+    .day-toggle-btn.active { background: var(--primary); color: #111; }
+
+    /* Task grid */
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .task-card {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: filter 0.15s;
+      position: relative;
+    }
+    .task-card:hover { filter: brightness(1.1); }
+    .task-card.completed { opacity: 0.55; }
+    .task-card.completed .task-text { text-decoration: line-through; color: #888; }
+    .task-text {
+      font-size: 20px;
+      word-break: break-word;
+      flex: 1;
+    }
+    .task-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .task-actions .mc-btn {
+      font-size: 11px;
+      padding: 4px 10px;
+      flex: 1;
+    }
+    .task-time {
+      font-size: 14px;
+      color: #888;
+    }
+    .task-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .task-meta-row {
+      font-size: 16px;
+      color: #cfcfcf;
+    }
+    .task-meta-label {
+      font-family: 'Silkscreen', cursive;
+      font-size: 11px;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-right: 6px;
+    }
+
+    /* Timer */
+    .timer-display {
+      font-family: 'Silkscreen', cursive;
+      font-size: 64px;
+      text-align: center;
+      color: var(--primary);
+      padding: 20px 0 8px;
+      letter-spacing: 4px;
+    }
+    .timer-label {
+      text-align: center;
+      font-size: 16px;
+      color: #888;
+      margin-bottom: 16px;
+      font-family: 'Silkscreen', cursive;
+      text-transform: uppercase;
+    }
+    .timer-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .timer-settings {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .timer-settings .mc-input {
+      width: 110px;
+      text-align: center;
+    }
+    .timer-task-label {
+      text-align: center;
+      font-size: 18px;
+      color: #cfcfcf;
+      margin-bottom: 14px;
+      min-height: 24px;
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .stat-box {
+      padding: 10px;
+      text-align: center;
+    }
+    .stat-value {
+      font-family: 'Silkscreen', cursive;
+      font-size: 28px;
+      color: var(--primary);
+    }
+    .stat-label {
+      font-size: 14px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 30px;
+      color: #666;
+      font-size: 20px;
+    }
+    .empty-state .block-icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      background: var(--primary);
+      color: #111;
+      font-family: 'Silkscreen', cursive;
+      font-size: 13px;
+      padding: 10px 16px;
+      border: 3px solid var(--border);
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 2.2s forwards;
+      max-width: 260px;
+    }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
+
+    /* Confirm overlay */
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .confirm-box {
+      padding: 24px;
+      text-align: center;
+      max-width: 320px;
+      width: 90%;
+    }
+    .confirm-box p {
+      font-size: 22px;
+      margin-bottom: 16px;
+    }
+    .confirm-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    /* Scrollbar */
+    .app-wrapper::-webkit-scrollbar { width: 10px; }
+    .app-wrapper::-webkit-scrollbar-track { background: #222; }
+    .app-wrapper::-webkit-scrollbar-thumb { background: var(--secondary); border: 2px solid #222; }
+
+    /* Block builder grid */
+    .block-builder-section {
+      margin-top: 24px;
+      padding: 16px;
+    }
+    .builder-title {
+      font-family: 'Silkscreen', cursive;
+      font-size: 18px;
+      color: var(--primary);
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .build-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      background: #222;
+      padding: 12px;
+      border: 3px solid var(--border);
+      width: 200px;
+      margin: 0 auto;
+    }
+    .build-cell {
+      aspect-ratio: 1;
+      background: #1a1a1a;
+      border: 2px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      cursor: pointer;
+      transition: all 0.1s;
+      position: relative;
+    }
+    .build-cell:hover {
+      background: #2a2a2a;
+      border-color: var(--primary);
+    }
+    .build-cell.filled {
+      background: #333;
+      border-color: var(--primary);
+    }
+    .build-cell.filled:hover {
+      filter: brightness(1.3);
+    }
+    .clear-build-btn {
+      margin-top: 12px;
+      width: 100%;
+    }
+    .floating-block {
+      position: fixed;
+      font-size: 48px;
+      pointer-events: none;
+      z-index: 500;
+      animation: blockFloat 0.6s ease-out forwards;
+    }
+    .builder-status {
+      text-align: center;
+      font-size: 18px;
+      color: #bdbdbd;
+      margin-top: 12px;
+    }
+    .gallery-panel {
+      margin-top: 16px;
+      padding: 16px;
+    }
+    .gallery-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .gallery-card {
+      padding: 12px 8px;
+      text-align: center;
+      min-height: 130px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+    }
+    .gallery-character {
+      font-size: 40px;
+      line-height: 1;
+    }
+    .gallery-name {
+      font-family: 'Silkscreen', cursive;
+      font-size: 12px;
+      color: var(--primary);
+      text-transform: uppercase;
+      line-height: 1.4;
+    }
+    .gallery-meta {
+      font-size: 16px;
+      color: #9c9c9c;
+    }
+    @keyframes blockFloat {
+      0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-120px) rotate(360deg) scale(0.5);
+      }
+    }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div class="app-wrapper" id="app"><!-- Home Screen -->
+   <div id="homeScreen" style="display:flex;align-items:center;justify-content:center;min-height:100%;background:linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);flex-direction:column;gap:20px;padding:20px;">
+    <div style="text-align:center;">
+     <div style="font-family:'Silkscreen',cursive;font-size:48px;color:#4caf50;text-transform:uppercase;letter-spacing:3px;margin-bottom:8px;text-shadow:2px 2px #000;">
+      ⛏️ SMART STUDY
+     </div>
+     <div style="font-family:'Silkscreen',cursive;font-size:48px;color:#4caf50;text-transform:uppercase;letter-spacing:3px;margin-bottom:24px;text-shadow:2px 2px #000;">
+      DASHBOARD
+     </div>
+     <div style="font-family:'VT323',monospace;font-size:24px;color:#aaa;margin-bottom:32px;">
+      » Minecraft Edition «
+     </div>
+    </div>
+    <div style="background:#3a3a3a;border:4px solid #1a1a1a;outline:2px solid #555;outline-offset:-6px;padding:24px;max-width:400px;text-align:center;font-size:20px;color:#e0e0e0;line-height:1.6;">
+     <div style="margin-bottom:16px;">
+      Complete tasks to gain XP, level up, and become a master builder! 🏗️
+     </div>
+     <div style="font-size:18px;color:#888;">
+      ⏱️ Focus sessions • 📝 Task planner • ⭐ XP system
+     </div>
+    </div><button id="startBtn" class="mc-btn mc-btn-primary" style="font-size:24px;padding:16px 32px;letter-spacing:2px;margin-top:12px;cursor:pointer;">START →</button>
+   </div><!-- Dashboard Screen -->
+   <div id="dashboardScreen" style="display:none;"><!-- Header -->
+    <header class="header">
+     <div class="header-title"><span class="pickaxe">⛏️</span> <span id="dashTitle">Smart Study Dashboard</span>
+     </div>
+     <div class="xp-section">
+      <div class="level-badge" id="levelBadge">
+       LVL 1
+      </div>
+      <div>
+       <div class="xp-bar-outer">
+        <div class="xp-bar-inner" id="xpBar" style="width:0%"></div>
+       </div>
+       <div class="xp-text" id="xpText">
+        0 / 100 XP
+       </div>
+      </div>
+     </div>
+    </header><!-- Main -->
+    <div class="main-content"><!-- Left: Study Planner -->
+     <div class="mc-box panel">
+      <div class="panel-title">
+       <i data-lucide="book-open"></i> Study Planner
+      </div>
+      <form class="task-form" id="taskForm">
+       <div class="task-field task-field-main">
+        <label class="task-field-label" for="taskInput">Task Name</label><input class="mc-input" id="taskInput" type="text" placeholder="Enter a new task..." maxlength="100" aria-label="New task">
+       </div>
+       <div class="task-field task-field-small">
+        <label class="task-field-label" for="xpSelect">XP</label><select class="mc-input" id="xpSelect" style="width:100%;font-size:16px;" aria-label="XP reward"> <option value="25">25 XP</option> <option value="50">50 XP</option> <option value="75">75 XP</option> </select>
+       </div>
+       <div class="task-field task-field-small">
+        <label class="task-field-label" for="taskDuration">Focus Timer</label><input class="mc-input" id="taskDuration" type="number" min="5" max="180" step="5" value="25" style="width:100%;font-size:16px;" aria-label="Focus minutes">
+       </div>
+       <button type="submit" class="mc-btn mc-btn-primary">+ Add</button>
+      </form>
+      <div class="mc-box day-completion">
+       <div class="day-completion-label">
+        📅 Done for today?
+       </div><button class="day-toggle-btn" id="doneForDayBtn">Not Yet</button>
+      </div>
+      <div id="taskGrid" class="task-grid"></div>
+      <div id="emptyState" class="empty-state">
+       <div class="block-icon">
+        🧱
+       </div> No tasks yet. Start building!
+      </div><!-- Block Builder -->
+      <div class="block-builder-section mc-box">
+       <div class="builder-title">
+        <i data-lucide="home"></i> Your Block House
+       </div>
+       <div class="build-grid" id="buildGrid"></div><button class="mc-btn mc-btn-secondary clear-build-btn" id="clearBuildBtn">Clear All</button>
+       <div class="builder-status" id="builderStatus">0/9 blocks placed • Fill the board to unlock a character</div>
+      </div>
+      <div class="gallery-panel mc-box">
+       <div class="builder-title">
+        <i data-lucide="image"></i> Character Gallery
+       </div>
+       <div class="gallery-actions"><button class="mc-btn mc-btn-danger" id="clearGalleryBtn">Clear Gallery</button>
+       </div>
+       <div id="galleryEmpty" class="empty-state" style="padding:20px 12px;">
+        <div class="block-icon">
+         🧍
+        </div> Build a full 3x3 board to unlock your first character.
+       </div>
+       <div class="gallery-grid" id="galleryGrid"></div>
+      </div>
+     </div><!-- Right: Timer + Stats -->
+     <div style="display:flex;flex-direction:column;gap:16px;"><!-- Timer -->
+      <div class="mc-box panel">
+       <div class="panel-title">
+        <i data-lucide="timer"></i> Focus Timer
+       </div>
+       <div class="timer-display" id="timerDisplay">
+        25:00
+       </div>
+       <div class="timer-label" id="timerLabel">
+        Ready to focus
+       </div>
+       <div class="timer-task-label" id="timerTaskLabel">
+        No task selected
+       </div>
+       <div class="timer-settings"><input class="mc-input" id="timerMinutesInput" type="number" min="5" max="180" step="5" value="25" aria-label="Timer minutes"> <button class="mc-btn mc-btn-secondary" id="timerApply">Set Minutes</button>
+       </div>
+       <div class="timer-buttons"><button class="mc-btn mc-btn-primary" id="timerToggle">▶ Start</button> <button class="mc-btn mc-btn-secondary" id="timerReset">↺ Reset</button>
+       </div>
+      </div><!-- Stats -->
+      <div class="mc-box panel">
+       <div class="panel-title">
+        <i data-lucide="bar-chart-3"></i> Stats
+       </div>
+       <div class="stats-grid">
+        <div class="mc-box stat-box">
+         <div class="stat-value" id="statTotal">
+          0
+         </div>
+         <div class="stat-label">
+          Total Tasks
+         </div>
+        </div>
+        <div class="mc-box stat-box">
+         <div class="stat-value" id="statDone">
+          0
+         </div>
+         <div class="stat-label">
+          Completed
+         </div>
+        </div>
+        <div class="mc-box stat-box">
+         <div class="stat-value" id="statXp">
+          0
+         </div>
+         <div class="stat-label">
+          Total XP
+         </div>
+        </div>
+        <div class="mc-box stat-box">
+         <div class="stat-value" id="statSessions">
+          0
+         </div>
+         <div class="stat-label">
+          Focus Sessions
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div><!-- Confirm overlay (hidden) -->
+    <div class="confirm-overlay" id="confirmOverlay" style="display:none;">
+     <div class="mc-box confirm-box">
+      <p id="confirmMsg">Delete this task?</p>
+      <div class="confirm-buttons"><button class="mc-btn mc-btn-danger" id="confirmYes">Yes</button> <button class="mc-btn mc-btn-secondary" id="confirmNo">Cancel</button>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+    // --- Navigation ---
+    document.getElementById('startBtn').addEventListener('click', () => {
+      document.getElementById('homeScreen').style.display = 'none';
+      document.getElementById('dashboardScreen').style.display = 'flex';
+      document.getElementById('dashboardScreen').style.flexDirection = 'column';
+    });
+
+    // --- State ---
+    const STORAGE_KEY = 'mc_study_dash';
+    const BUILD_GRID_KEY = 'mc_build_grid';
+    const GALLERY_KEY = 'mc_character_gallery';
+    let state = loadState();
+    let buildState = loadBuildState();
+    let characterGallery = loadCharacterGallery();
+    let timerInterval = null;
+    let timerRunning = false;
+    let timerDurationMinutes = 25;
+    let timerSeconds = timerDurationMinutes * 60;
+    let selectedTaskId = null;
+    let confirmCallback = null;
+
+    function defaultState() {
+      return { tasks: [], xp: 0, focusSessions: 0, lastCompletionBonus: null, doneForDay: false };
+    }
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const s = JSON.parse(raw);
+          return { tasks: s.tasks || [], xp: s.xp || 0, focusSessions: s.focusSessions || 0, lastCompletionBonus: s.lastCompletionBonus || null, doneForDay: s.doneForDay || false };
+        }
+      } catch(e) {}
+      return defaultState();
+    }
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadBuildState() {
+      try {
+        const raw = localStorage.getItem(BUILD_GRID_KEY);
+        if (raw) {
+          return JSON.parse(raw);
+        }
+      } catch(e) {}
+      return new Array(9).fill(null);
+    }
+    function saveBuildState() {
+      localStorage.setItem(BUILD_GRID_KEY, JSON.stringify(buildState));
+    }
+
+    function loadCharacterGallery() {
+      try {
+        const raw = localStorage.getItem(GALLERY_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        }
+      } catch(e) {}
+      return [];
+    }
+    function saveCharacterGallery() {
+      localStorage.setItem(GALLERY_KEY, JSON.stringify(characterGallery));
+    }
+
+    // --- XP / Level ---
+    const XP_PER_TASK = 25;
+    function xpForLevel(lvl) { return lvl * 100; }
+    function getLevel(xp) {
+      let lvl = 1;
+      let total = 0;
+      while (total + xpForLevel(lvl) <= xp) {
+        total += xpForLevel(lvl);
+        lvl++;
+      }
+      return { level: lvl, currentXp: xp - total, needed: xpForLevel(lvl) };
+    }
+
+    function getTodayKey() {
+      const date = new Date();
+      return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    }
+
+    function checkAndApplyDailyBonus() {
+      // Only apply bonus if "Done for Day" is enabled
+      if (!state.doneForDay) return false;
+
+      const today = getTodayKey();
+      if (state.lastCompletionBonus === today) return false; // Already got bonus today
+
+      const total = state.tasks.length;
+      const done = state.tasks.filter(t => t.completed).length;
+      if (total > 0 && total === done) {
+        const bonus = parseInt(currentConfig.daily_bonus) || 50;
+        state.xp += bonus;
+        state.lastCompletionBonus = today;
+        saveState();
+        showToast(`🌟 Perfect day! +${bonus} XP bonus!`);
+        return true;
+      }
+      return false;
+    }
+
+    function toggleDoneForDay() {
+      state.doneForDay = !state.doneForDay;
+      saveState();
+      render();
+      if (state.doneForDay) {
+        showToast('📅 Day locked! Complete all tasks for bonus!');
+        // Try to apply bonus immediately if all tasks are done
+        checkAndApplyDailyBonus();
+      } else {
+        showToast('📅 Day unlocked. Can add more tasks.');
+      }
+    }
+
+    // --- Render ---
+    function render() {
+      const { level, currentXp, needed } = getLevel(state.xp);
+      const pct = Math.min((currentXp / needed) * 100, 100);
+
+      document.getElementById('levelBadge').textContent = `LVL ${level}`;
+      document.getElementById('xpBar').style.width = pct + '%';
+      document.getElementById('xpText').textContent = `${currentXp} / ${needed} XP`;
+
+      const total = state.tasks.length;
+      const done = state.tasks.filter(t => t.completed).length;
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statDone').textContent = done;
+      document.getElementById('statXp').textContent = state.xp;
+      document.getElementById('statSessions').textContent = state.focusSessions;
+
+      // Update "Done for Day" button
+      const doneBtn = document.getElementById('doneForDayBtn');
+      if (state.doneForDay) {
+        doneBtn.classList.add('active');
+        doneBtn.textContent = '✓ Done Today';
+      } else {
+        doneBtn.classList.remove('active');
+        doneBtn.textContent = 'Not Yet';
+      }
+
+      // Tasks
+      const grid = document.getElementById('taskGrid');
+      const empty = document.getElementById('emptyState');
+      const existingMap = new Map();
+      [...grid.children].forEach(el => existingMap.set(el.dataset.id, el));
+
+      const currentIds = new Set(state.tasks.map(t => t.id));
+
+      // Remove deleted
+      existingMap.forEach((el, id) => {
+        if (!currentIds.has(id)) el.remove();
+      });
+
+      // Add or update
+      state.tasks.forEach((task, i) => {
+        let card = grid.querySelector(`[data-id="${task.id}"]`);
+        if (!card) {
+          card = document.createElement('div');
+          card.className = 'mc-box task-card';
+          card.dataset.id = task.id;
+          card.innerHTML = `
+            <div class="task-text"></div>
+            <div class="task-meta">
+              <div class="task-meta-row"><span class="task-meta-label">XP</span><span class="task-xp"></span></div>
+              <div class="task-meta-row"><span class="task-meta-label">Focus</span><span class="task-focus"></span></div>
+              <div class="task-time"><span class="task-meta-label">Added</span><span class="task-date"></span></div>
+            </div>
+            <div class="task-actions">
+              <button class="mc-btn mc-btn-secondary btn-focus">Focus</button>
+              <button class="mc-btn mc-btn-primary btn-toggle"></button>
+              <button class="mc-btn mc-btn-danger btn-delete">✕</button>
+            </div>
+          `;
+          card.querySelector('.btn-focus').addEventListener('click', () => selectTaskForTimer(task.id));
+          card.querySelector('.btn-toggle').addEventListener('click', () => toggleTask(task.id));
+          card.querySelector('.btn-delete').addEventListener('click', () => requestDelete(task.id));
+          grid.appendChild(card);
+        }
+        card.className = 'mc-box task-card' + (task.completed ? ' completed' : '');
+        card.querySelector('.task-text').textContent = task.text;
+        card.querySelector('.task-xp').textContent = `${task.xpReward || 25} XP`;
+        card.querySelector('.task-focus').textContent = `${task.focusMinutes || 25} min`;
+        card.querySelector('.task-date').textContent = new Date(task.createdAt).toLocaleDateString();
+        card.querySelector('.btn-focus').textContent = selectedTaskId === task.id ? 'Selected' : 'Focus';
+        card.querySelector('.btn-toggle').textContent = task.completed ? '↩ Undo' : '✓ Done';
+      });
+
+      empty.style.display = state.tasks.length === 0 ? 'block' : 'none';
+      renderTimerTaskLabel();
+    }
+
+    // --- Tasks ---
+    function addTask(text) {
+      if (!text.trim()) return;
+      const xpValue = parseInt(document.getElementById('xpSelect').value) || 25;
+      const focusMinutes = clampTimerMinutes(document.getElementById('taskDuration').value);
+      state.tasks.unshift({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        text: text.trim(),
+        completed: false,
+        xpReward: xpValue,
+        focusMinutes,
+        createdAt: new Date().toISOString()
+      });
+      saveState();
+      render();
+      showToast('📝 Task added!');
+    }
+
+    function toggleTask(id) {
+      const task = state.tasks.find(t => t.id === id);
+      if (!task) return;
+      task.completed = !task.completed;
+      if (task.completed) {
+        const xpGain = task.xpReward || 25;
+        state.xp += xpGain;
+        showToast(`⭐ +${xpGain} XP earned!`);
+        // Spawn floating blocks
+        spawnFloatingBlocks();
+        // Check level up
+        const oldLevel = getLevel(state.xp - xpGain).level;
+        const newLevel = getLevel(state.xp).level;
+        if (newLevel > oldLevel) {
+          setTimeout(() => showToast(`🎉 LEVEL UP! Now LVL ${newLevel}!`), 400);
+        }
+        // Check daily bonus
+        setTimeout(() => checkAndApplyDailyBonus(), 600);
+      }
+      saveState();
+      render();
+    }
+
+    function requestDelete(id) {
+      const task = state.tasks.find(t => t.id === id);
+      if (!task) return;
+      showConfirm(`Delete "${task.text.slice(0, 20)}"?`, () => {
+        state.tasks = state.tasks.filter(t => t.id !== id);
+        saveState();
+        render();
+        showToast('🗑️ Task removed');
+      });
+    }
+
+    // --- Timer ---
+    function getSelectedTask() {
+      return state.tasks.find(t => t.id === selectedTaskId) || null;
+    }
+
+    function renderTimerTaskLabel() {
+      const selectedTask = getSelectedTask();
+      const label = document.getElementById('timerTaskLabel');
+      label.textContent = selectedTask
+        ? `Task: ${selectedTask.text} (${selectedTask.focusMinutes || timerDurationMinutes} min)`
+        : 'No task selected';
+    }
+
+    function clampTimerMinutes(value) {
+      const parsed = parseInt(value, 10);
+      if (Number.isNaN(parsed)) return 25;
+      return Math.min(180, Math.max(5, parsed));
+    }
+
+    function setTimerDuration(minutes, sourceLabel = null) {
+      timerDurationMinutes = clampTimerMinutes(minutes);
+      timerSeconds = timerDurationMinutes * 60;
+      clearInterval(timerInterval);
+      timerRunning = false;
+      document.getElementById('timerToggle').textContent = '▶ Start';
+      document.getElementById('timerMinutesInput').value = timerDurationMinutes;
+      updateTimerDisplay();
+      const suffix = sourceLabel ? ` for ${sourceLabel}` : '';
+      showToast(`⏱️ Timer set to ${timerDurationMinutes} min${suffix}`);
+    }
+
+    function selectTaskForTimer(taskId) {
+      const task = state.tasks.find(t => t.id === taskId);
+      if (!task) return;
+      selectedTaskId = taskId;
+      setTimerDuration(task.focusMinutes || 25, task.text);
+      render();
+    }
+
+    function applyCustomTimerMinutes() {
+      selectedTaskId = null;
+      setTimerDuration(document.getElementById('timerMinutesInput').value, '');
+      render();
+    }
+
+    function updateTimerDisplay() {
+      const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+      const s = (timerSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('timerDisplay').textContent = `${m}:${s}`;
+      document.getElementById('timerLabel').textContent = timerRunning ? 'Focusing...' : (timerSeconds === timerDurationMinutes * 60 ? 'Ready to focus' : 'Paused');
+    }
+
+    function toggleTimer() {
+      if (timerRunning) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        document.getElementById('timerToggle').textContent = '▶ Start';
+      } else {
+        timerRunning = true;
+        document.getElementById('timerToggle').textContent = '⏸ Pause';
+        timerInterval = setInterval(() => {
+          timerSeconds--;
+          if (timerSeconds <= 0) {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            timerSeconds = timerDurationMinutes * 60;
+            state.focusSessions++;
+            state.xp += 10;
+            saveState();
+            render();
+            showToast('🎯 Focus session complete! +10 XP');
+            document.getElementById('timerToggle').textContent = '▶ Start';
+          }
+          updateTimerDisplay();
+        }, 1000);
+      }
+      updateTimerDisplay();
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      timerSeconds = timerDurationMinutes * 60;
+      document.getElementById('timerToggle').textContent = '▶ Start';
+      updateTimerDisplay();
+    }
+
+    // --- Toast ---
+    function showToast(msg) {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 2600);
+    }
+
+    // --- Confirm ---
+    function showConfirm(msg, onYes) {
+      document.getElementById('confirmMsg').textContent = msg;
+      document.getElementById('confirmOverlay').style.display = 'flex';
+      confirmCallback = onYes;
+    }
+
+    // --- Floating Blocks ---
+    const MINECRAFT_BLOCKS = ['🟫', '🟩', '🟦', '🟨', '🟧', '⬛', '⬜'];
+    const CHARACTER_UNLOCKS = [
+      { id: 'steve-scout', icon: '🧑‍🌾', name: 'Steve Scout' },
+      { id: 'alex-builder', icon: '🧑‍🦰', name: 'Alex Builder' },
+      { id: 'village-trader', icon: '🧑‍🍳', name: 'Village Trader' },
+      { id: 'redstone-wizard', icon: '🧙', name: 'Redstone Wizard' },
+      { id: 'nether-knight', icon: '🛡️', name: 'Nether Knight' },
+      { id: 'deep-miner', icon: '⛏️', name: 'Deep Miner' },
+      { id: 'skeleton-archer', icon: '🏹', name: 'Skeleton Archer' },
+      { id: 'honey-bee', icon: '🐝', name: 'Honey Bee' },
+      { id: 'forest-fox', icon: '🦊', name: 'Forest Fox' },
+      { id: 'tamed-wolf', icon: '🐺', name: 'Tamed Wolf' }
+    ];
+    let selectedBlock = MINECRAFT_BLOCKS[0];
+    
+    function spawnFloatingBlocks() {
+      const blockCount = 3;
+      for (let i = 0; i < blockCount; i++) {
+        setTimeout(() => {
+          const block = document.createElement('div');
+          block.className = 'floating-block';
+          block.textContent = selectedBlock;
+          
+          const startX = Math.random() * window.innerWidth;
+          const startY = window.innerHeight - 100;
+          
+          block.style.left = startX + 'px';
+          block.style.top = startY + 'px';
+          
+          document.body.appendChild(block);
+          
+          // Add to build grid after animation
+          setTimeout(() => {
+            addBlockToGrid(selectedBlock);
+            block.remove();
+          }, 600);
+        }, i * 100);
+      }
+    }
+
+    function addBlockToGrid(blockType) {
+      // Find first empty cell
+      const emptyIdx = buildState.indexOf(null);
+      if (emptyIdx !== -1) {
+        buildState[emptyIdx] = blockType;
+        saveBuildState();
+        renderBuildGrid();
+        maybeUnlockCharacter();
+      }
+    }
+
+    function getBuildProgress() {
+      return buildState.filter(Boolean).length;
+    }
+
+    function getNextCharacterUnlock() {
+      const unlockedIds = new Set(characterGallery.map(character => character.id));
+      const nextLocked = CHARACTER_UNLOCKS.find(character => !unlockedIds.has(character.id));
+      return nextLocked || CHARACTER_UNLOCKS[Math.floor(Math.random() * CHARACTER_UNLOCKS.length)];
+    }
+
+    function maybeUnlockCharacter() {
+      if (getBuildProgress() !== buildState.length) return;
+
+      const character = getNextCharacterUnlock();
+      characterGallery.unshift({
+        ...character,
+        unlockedAt: new Date().toISOString()
+      });
+      saveCharacterGallery();
+
+      buildState = new Array(9).fill(null);
+      saveBuildState();
+      renderBuildGrid();
+      renderGallery();
+      showToast(`🎉 Character unlocked: ${character.name}!`);
+    }
+
+    function renderBuildGrid() {
+      const grid = document.getElementById('buildGrid');
+      grid.innerHTML = '';
+      
+      buildState.forEach((block, idx) => {
+        const cell = document.createElement('div');
+        cell.className = 'build-cell';
+        if (block) {
+          cell.classList.add('filled');
+          cell.textContent = block;
+        }
+        cell.addEventListener('click', () => {
+          if (buildState[idx]) {
+            buildState[idx] = null;
+            saveBuildState();
+            renderBuildGrid();
+          }
+        });
+        grid.appendChild(cell);
+      });
+
+      const status = document.getElementById('builderStatus');
+      if (status) {
+        status.textContent = `${getBuildProgress()}/9 blocks placed • Fill the board to unlock a character`;
+      }
+    }
+
+    function renderGallery() {
+      const gallery = document.getElementById('galleryGrid');
+      const empty = document.getElementById('galleryEmpty');
+      gallery.innerHTML = '';
+
+      if (!characterGallery.length) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      empty.style.display = 'none';
+      characterGallery.forEach((character) => {
+        const card = document.createElement('div');
+        card.className = 'mc-box gallery-card';
+        card.innerHTML = `
+          <div class="gallery-character">${character.icon}</div>
+          <div class="gallery-name">${character.name}</div>
+          <div class="gallery-meta">${new Date(character.unlockedAt).toLocaleDateString()}</div>
+        `;
+        gallery.appendChild(card);
+      });
+    }
+
+    document.getElementById('clearBuildBtn').addEventListener('click', () => {
+      buildState = new Array(9).fill(null);
+      saveBuildState();
+      renderBuildGrid();
+      showToast('🏚️ House cleared!');
+    });
+    document.getElementById('clearGalleryBtn').addEventListener('click', () => {
+      if (!characterGallery.length) {
+        showToast('🗂️ Gallery is already empty');
+        return;
+      }
+      showConfirm('Clear the whole character gallery?', () => {
+        characterGallery = [];
+        saveCharacterGallery();
+        renderGallery();
+        showToast('🗑️ Gallery cleared');
+      });
+    });
+
+    document.getElementById('confirmYes').addEventListener('click', () => {
+      document.getElementById('confirmOverlay').style.display = 'none';
+      if (confirmCallback) confirmCallback();
+      confirmCallback = null;
+    });
+    document.getElementById('confirmNo').addEventListener('click', () => {
+      document.getElementById('confirmOverlay').style.display = 'none';
+      confirmCallback = null;
+    });
+
+    // --- Events ---
+    document.getElementById('taskForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('taskInput');
+      addTask(input.value);
+      input.value = '';
+    });
+    document.getElementById('timerApply').addEventListener('click', applyCustomTimerMinutes);
+    document.getElementById('timerToggle').addEventListener('click', toggleTimer);
+    document.getElementById('timerReset').addEventListener('click', resetTimer);
+    document.getElementById('doneForDayBtn').addEventListener('click', toggleDoneForDay);
+
+    // --- Element SDK ---
+    const defaultConfig = {
+      dashboard_title: 'Smart Study Dashboard',
+      daily_bonus: '50',
+      background_color: '#2d2d2d',
+      surface_color: '#3a3a3a',
+      text_color: '#e0e0e0',
+      primary_color: '#4caf50',
+      secondary_color: '#6d6d6d',
+      font_family: 'VT323',
+      font_size: 20
+    };
+
+    let currentConfig = { ...defaultConfig };
+
+    function applyConfig(config) {
+      currentConfig = config;
+      const bg = config.background_color || defaultConfig.background_color;
+      const surface = config.surface_color || defaultConfig.surface_color;
+      const text = config.text_color || defaultConfig.text_color;
+      const primary = config.primary_color || defaultConfig.primary_color;
+      const secondary = config.secondary_color || defaultConfig.secondary_color;
+      const font = config.font_family || defaultConfig.font_family;
+      const fontSize = config.font_size || defaultConfig.font_size;
+
+      document.documentElement.style.setProperty('--bg', bg);
+      document.documentElement.style.setProperty('--surface', surface);
+      document.documentElement.style.setProperty('--text', text);
+      document.documentElement.style.setProperty('--primary', primary);
+      document.documentElement.style.setProperty('--secondary', secondary);
+
+      document.body.style.fontFamily = `${font}, VT323, monospace`;
+      document.body.style.fontSize = fontSize + 'px';
+      document.body.style.color = text;
+      document.body.style.background = bg;
+      document.querySelector('.app-wrapper').style.background = bg;
+
+      document.getElementById('dashTitle').textContent = config.dashboard_title || defaultConfig.dashboard_title;
+
+      // Apply primary color to relevant elements
+      document.querySelector('.header-title').style.color = primary;
+      document.getElementById('levelBadge').style.background = primary;
+      document.getElementById('xpBar').style.background = primary;
+      document.getElementById('timerDisplay').style.color = primary;
+
+      document.querySelectorAll('.panel-title').forEach(el => { el.style.color = primary; });
+      document.querySelectorAll('.panel-title i').forEach(el => { el.style.color = primary; });
+      document.querySelectorAll('.stat-value').forEach(el => { el.style.color = primary; });
+
+      // Font sizing
+      const base = fontSize;
+      document.getElementById('dashTitle').style.fontSize = (base * 1.1) + 'px';
+      document.querySelectorAll('.task-text').forEach(el => { el.style.fontSize = base + 'px'; });
+      document.querySelectorAll('.panel-title').forEach(el => { el.style.fontSize = (base * 0.9) + 'px'; });
+
+      render();
+    }
+
+    window.elementSdk.init({
+      defaultConfig,
+      onConfigChange: async (config) => { applyConfig(config); },
+      mapToCapabilities: (config) => ({
+        recolorables: [
+          { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
+          { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
+          { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
+          { get: () => config.primary_color || defaultConfig.primary_color, set: (v) => { config.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); } },
+          { get: () => config.secondary_color || defaultConfig.secondary_color, set: (v) => { config.secondary_color = v; window.elementSdk.setConfig({ secondary_color: v }); } },
+        ],
+        borderables: [],
+        fontEditable: {
+          get: () => config.font_family || defaultConfig.font_family,
+          set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }
+        },
+        fontSizeable: {
+          get: () => config.font_size || defaultConfig.font_size,
+          set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }
+        }
+      }),
+      mapToEditPanelValues: (config) => new Map([
+        ['dashboard_title', config.dashboard_title || defaultConfig.dashboard_title],
+        ['daily_bonus', config.daily_bonus || defaultConfig.daily_bonus]
+      ])
+    });
+
+    // Initial render
+    render();
+    updateTimerDisplay();
+    renderBuildGrid();
+    renderGallery();
+    lucide.createIcons();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ee2e30cb586384f',t:'MTc3NjUwNzEwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
